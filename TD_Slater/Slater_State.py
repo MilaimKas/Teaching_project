@@ -1,5 +1,7 @@
-# Class to calculate Slater-State for a given molecule and basis sets
-# The Slater States are single excitation from a closed-shell GS
+"""
+Class to calculate Slater-State for a given molecule and basis sets
+The Slater States are single excitation from a closed-shell GS
+"""
 
 import numpy as np
 from pyscf import scf,gto
