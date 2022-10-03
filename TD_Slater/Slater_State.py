@@ -1,6 +1,8 @@
 """
 Class to calculate Slater-State for a given molecule and basis sets
 The Slater States are single excitation from a closed-shell GS
+
+TODO: only single excitation from GS leads to only 2e excitation between Slater States ...
 """
 
 import numpy as np
