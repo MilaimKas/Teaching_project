@@ -1,0 +1,169 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{braket}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+
+
+\title{Ideas for set of numerical exercises}
+\author{Milaim Kas}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+
+\subsection{Some links}
+
+https://kthpanor.github.io/echem/docs/intro.html
+https://pycrawfordprogproj.readthedocs.io/en/latest/index.html
+
+\section{Gaussian type orbitals (GTO)}
+
+\subsection{Theory}
+
+In spherical coordinates $\chi^{GTO}=Y_{lm}(\theta,\phi)R^{GTO}_l{r}$, the angular part of a GTO is the usual harmonic spheric while the radial part, in spherical coordinates, is define as
+\begin{eqnarray}
+R_l^{GTO} = N_l r^l e^{-\alpha r^2} \\
+N_l = \sqrt{\frac{2^{2l+3}(l+1)!2\alpha^{l+\frac{1}{2}}}{(2l+2)!\sqrt{\pi}}}
+\end{eqnarray}
+In Cartesian coordinates, the GTO are defined as
+\begin{eqnarray}
+\chi^{GTO}_{ijk} = N_{ijk} x^{i}y^{j}z^{k} e^{-\alpha (x^2+y^2+z^2)} \\
+N_l = \frac{2\alpha}{\pi}^{\frac{3}{4}}\big[ \frac{(8\alpha)^{i+j+k}i!j!k!}{(2i)!(2j)!(2k)!} \big]
+\end{eqnarray}
+where $i$, $j$ and $k$ are integer that depends on the $l$ and $m_l$ quantum numbers. If $i + j + k = 0$, then the orbital has spherical symmetry and is considered an $s$-type GTO. If $i + j + k = 1$, the GTO possesses axial symmetry along one axis and is considered a $p$-type GTO. When $i + j + k = 2$, there are six possible GTOs that may be constructed; this is one more than the five canonical $d$ orbital functions for a given angular quantum number. To address this, a linear combination of two $d$-type GTOs can be used to reproduce a canonical $d$ function. 
+
+\subsection{Form of the numerical exercises}
+\begin{itemize}
+ \item Plotting radial part of hydrogen like orbitals for different values of $Z_{eff}$, $m$, $l$ and $n$ quantum numbers. Example: H, He, Cl, C, O. 
+ \item Plotting radial part of Gaussian basis functions in spherical coordinates for different values of $l$.
+ \item Compare both for different basis set (single, double, triple zeta) for core and valence atomic orbitals.
+ \item Provide a function which with to compare the students answer.
+ \item Polarization and diffuse functions: diatomic case (H$_{2}$, HCl). Plot Hartree-Fock molecular orbital for minimal basis and polarized basis. Effect on chemical bond.    
+\end{itemize}
+
+\subsection{To implement}
+
+\begin{itemize}
+\item Molecular coefficients must be given (for atoms and diatomic case).
+\item Build-in function with normalized Gaussian.  
+\end{itemize}
+
+\section{Hartree Fock and molecular orbitals}
+
+\subsection{Theory}
+
+\begin{itemize}
+\item Restricted variant of Hartree-Fock and Roothan equations. 
+\item General physical and chemical interpretation of molecular orbitals (occupied and unoccupied, Koopman's theorem, energy of Slater determinant).
+\end{itemize}
+  
+\subsection{Form of the numerical exercises}
+\begin{itemize}
+ \item Analysis and visualization of MOs for different chemical compounds: C$_2$H$_6$, C$_2$H$_4$, C$_2$H$_2$.
+ \item Symmetry consideration (group theory).
+ \item Plot a molecular orbital diagram.
+ \item Link between valence orbitals, hybridization and chemical bond (single, double and triple C-C bond).
+ \item bonding Vs non-bounding and anti-bounding orbitals.
+\end{itemize}
+
+\subsection{To implement}
+\begin{itemize}
+ \item Visualization program within jupyter-notebook environment. Possibility: produce .molden and .spt file using PySCF and then .jpg files.
+ \item Build-in functions for molecular orbital analysis. Print out symmetry and largest MO coefficients with corresponding AO for given threshold. 
+ \item Small HF self-made code for H$_2$ using given one and two electron integrals ?
+\end{itemize}
+
+\section{Photoionization}
+
+\subsection{Theory}
+The differential cross section for photoionization is given by 
+\begin{equation}
+\frac{d\sigma}{d\Omega_k}[\alpha] = \frac{8\pi kE_{tot}}{c}\sum_{l=0}^{\infty}\sum_{m_l=-l}^{l}c_{klm}(\theta_k,\phi_k)[\alpha]
+\end{equation}
+where $d\Omega_k=sin(\theta_k)d\theta_k d\phi_k$, $E_{tot} = IE+E_k$ and $c_{klm}$ is the transition probability $|\bra{\phi_{i}}r_{\alpha}\ket{\phi_e}|^2$ 
+
+\subsection{Form of the numerical exercise}
+\begin{itemize}
+ \item Photoionization cross section for hydrogen-like functions: $s, p , d$ orbitals.
+ \item Comparison with analytical results for $s$.
+ \item Photoionization cross section using GTO MOs with given LCAO coefficients and Gaussian parameters for atoms. 
+ \item Same for a molecule.
+ \item Stress on the different approximations.
+\end{itemize} 
+
+\subsection{To implement}
+
+\section{Chemical sensitivity in K-edge X-ray spectrum}
+
+\subsection{Theory}
+
+\subsection{Form of the numerical exercises}
+\begin{itemize}
+ \item Calculate carbon K-edge spectra of various functional groups (ex: C$_2$H$_6$, C$_2$H$_4$, C$_2$H$_2$, CH$_2$O, CH$_2$OH).
+ \item Using HF and/or MOM excitation energy.
+ \item Plot carbon K-edge spectra of a organic compounds containing the functional groups above. 
+\end{itemize}
+
+\subsection{To implement}
+\begin{itemize}
+ \item See the computational possibility for medium sized organic compounds.
+\end{itemize}
+
+\section{Time evolution of molecular quantum state under a laser field}
+
+\subsection{Theory}
+\begin{itemize}
+\item Time dependent SE. 
+\item Light as classic field.  
+\item Matter-light interaction operator.  
+\end{itemize}
+Possible analytical+plotting exercises: \\
+\begin{itemize}
+\item Steps to arrive at 
+\begin{equation}
+i\hbar\frac{dc_j}{dt}=\sum_i c_i(t)\hat{V}_{ij}e^{\Delta E_{ij}t}
+\end{equation}
+where $\hat{V}_{ij}=\bra{\Psi_i}\hat{H_{int}}\ket{\Psi_j}$ and $\Psi_i$ are the eigenfunctions of the unperturbed (molecular) Hamiltonian $\hat{H_{mol}}$. 
+\item Derive 1st order expression (Dirac's variation of constants, time evolution operator method and Dyson series) 
+\begin{equation}
+c_f = \frac{1}{i\hbar}\int_0^t V_{f0}(t)e^{i(\omega_f-\omega_i)t}dt
+\end{equation}
+\item Derive general expression for a constant perturbation $V_{ij}(t) = V_{ij}$ and  for a exponentially switched on potential $V_{ij}(t)=V_{ij}(1-e^{-kt})$. Extract physical interpretation. Final solutions: 
+\begin{eqnarray}
+|c_f|^2=\frac{4|V_{fi}|^2}{\omega_f-\omega_i}sin^2(\frac{(\omega_f-\omega_i)t}{2\hbar}) \\
+|c_f|^2=\frac{|V|^2p_2(t)}{\omega^2_{21}} \quad p_{2}(t) \, \textrm{is a function of} \, \frac{k}{\omega_{21}} \, \textrm{and} \, \textrm{t}
+\end{eqnarray}
+\item Derive general expression for an oscillating potential (harmonic perturbation). Extract physical interpretation. Final solutions:
+\begin{equation}
+|c_f|^2=\frac{4|V_{fi}|^2}{(\omega_i-\omega_f)}sin^2\frac{1}{2}(\omega_f-\omega_i-\omega_{field})
+\end{equation}
+\end{itemize}
+
+\begin{itemize}
+\item The long wavelength approximation: multipole expansion of the plane wave and the dipole approximation.
+\item Laser pulse shape. Link to pump probe experiment
+\end{itemize}
+
+\subsection{Form of the numerical exercises}
+\begin{itemize}
+\item Build set of excited Slater determinant: Slater-states. With related tdm. 
+\item Solve full TDSE within the electronic Slater states basis for different Laser pulse shape. 
+\item Plot and discuss the results. 
+\end{itemize}
+
+\subsection{To implement}
+\begin{itemize}
+\item Verify code (energy of Slater determinant)
+\item implement MOM calculation ? Reduce number of determinant: some valence excitation and core excitation only ? Tdm in MOM ?
+\item Same exercise within vibrational basis ? 
+\end{itemize}
+
+\section{Post Hartre-Fock approaches}
+
+\end{document}
+ 

@@ -2,58 +2,57 @@
 Class to calculate Slater-State for a given molecule and basis sets
 The Slater States are single excitation from a closed-shell GS
 
-TODO: only single excitation from GS leads to only 2e excitation between Slater States ...
+TODO: sort Ene, ST_tdm and det as a function of energy
+TODO: diagonal element of S_tdm are the eigenstates of H_0 (energies Ej) ?
 """
 
 import numpy as np
 from pyscf import scf,gto
 
-# TODO: sort Ene, ST_tdm and det as a function of energy
-# TODO: diagonal element of S_tdm are the eigenstates of H_0 (energies Ej) ?
-
 class Slater:
     def __init__(self,mol,mf):
-        # HF related properties
-        self.mol = mol
-        self.mf = mf
-        self.dim = mol.nao_nr()
-        self.mo_coeff = mf.mo_coeff  # column=MO, row=AO
-        self.mo_ene = mf.mo_energy
-        self.nocc = mol.nelectron // 2
-        self.nvir = self.mo_coeff[:, self.nocc:].shape[1]
-        self.h1e = mf.get_hcore()  # single particle hamiltonian
+      '''
+      class that stores all single excited determinant and there properties
+      '''
+      
+      # HF related properties
+      # ---------------------------------------------------------
+      self.mol = mol
+      self.mf = mf
+      self.dim = mol.nao_nr()
+      self.mo_coeff = mf.mo_coeff  # column=MO, row=AO
+      self.mo_ene = mf.mo_energy
+      self.nocc = mol.nelectron // 2
+      self.nvir = self.mo_coeff[:, self.nocc:].shape[1]
+      self.h1e = mf.get_hcore()  # single particle hamiltonian
 
-        # nuclear charge
-        self.charges = mol.atom_charges()
-        self.coords = mol.atom_coords()
-        self.nucl_dip = np.einsum('i,ix->x', self.charges, self.coords)
+      # nuclear charge
+      self.charges = mol.atom_charges()
+      self.coords = mol.atom_coords()
+      self.nucl_dip = np.einsum('i,ix->x', self.charges, self.coords)
 
-        # dipole integrals in AOs basis set
-        with mol.with_common_orig((0, 0, 0)):
-            self.ao_dip  = mol.intor_symmetric('int1e_r', comp=3)
-            #self.ao_quad = mol.intor_symmetric('int')
+      # dipole integrals in AOs basis set
+      with mol.with_common_orig((0, 0, 0)):
+          self.ao_dip  = mol.intor_symmetric('int1e_r', comp=3)
+          #self.ao_quad = mol.intor_symmetric('int')
 
-        # initialize properties of Slater States
+      # initialize properties of Slater States
+      # ---------------------------------------------------------
 
-        # Store all Slater determinant
-        self.det = []
-        # index of the single excitation i -> a respective to the GS for each Slater states
-        self.Orb_ex_ind = []
-        self.Orb_ex_ind.append([0, 0])  # GS excitation indices = 0,0
-        # xyz components of the tdm between Slater state q and p
-        # diagonal elements are the dipole moments
-        self.S_tdm = None
-        # electronic energy of the Slater states
-        self.Ene = None
-        # energy difference between Slater states
-        self.DE = None
+      # Store all Slater determinant
+      self.det = []
+      # index of the single excitation i -> a respective to the GS for each Slater states
+      self.Orb_ex_ind = [[0,0]]
+
+      # xyz components of the tdm between Slater state q and p
+      # diagonal elements are the dipole moments
+      self.S_tdm = None
+      # electronic energy of the Slater states
+      self.Ene = None
+      # energy difference between Slater states
+      self.DE = None
 
     def build(self):
-
-      # Transition dipole moment for all possible orbital change <phi_i|d|phi_a>
-      # O_tdm[i,a] is the TDM of the i --> a excitation
-      # Note = O_tdm are symmetric <phi_i|d|phi_a> = <phi_a|d|phi_i>
-      # O = orbitals
 
       dim = self.dim
       mo_coeff = self.mo_coeff
@@ -61,6 +60,9 @@ class Slater:
       nocc = self.nocc
       nvir = self.nvir
 
+      # Transition dipole moment for all possible orbital change <phi_i|d|phi_a>
+      # O_tdm[i,a] is the TDM of the i --> a excitation (with all orbitals equally occupied)
+      # Note = O_tdm are symmetric <phi_i|d|phi_a> = <phi_a|d|phi_i>
       O_tdmx = np.zeros((dim, dim))
       O_tdmy = np.zeros((dim, dim))
       O_tdmz = np.zeros((dim, dim))
@@ -91,34 +93,60 @@ class Slater:
       self.DE = np.zeros((len(self.det), len(self.det)))
 
       for p in range(len(self.det)):
+
+        # store excitations indices 
+        tmp_vec = self.det[p] - self.det[0]
+        if p != 0:
+          self.Orb_ex_ind.append([np.where(tmp_vec == -1)[0], np.where(tmp_vec == 1)[0]])
+
         # density matrix for the given determinant
         dm = np.einsum('pi,ij,qj->pq', mo_coeff, np.diag(self.det[p]), mo_coeff.conj())
+
         # electronic energy from dm
         self.Ene[p] = scf.hf.energy_elec(self.mf, dm=dm)[0]
+        
+        # loop over all determinant and evaluate tdm
         for q in range(len(self.det)):
+
           if p != q:
+          
             # look for difference in MOs
             tmp_vec = self.det[q] - self.det[p]
-            # Store indices of MOs
-            i = np.asarray(np.where(tmp_vec == -1)).flatten()[0]
-            a = np.asarray(np.where(tmp_vec == 1)).flatten()[0]
-            # Store excitation indices for GS-->ES
-            if p == 0:
-                self.Orb_ex_ind.append([i, a])
-            # Store tdm for p-->q transition
-            self.S_tdm[p, q, 0] = O_tdmx[i, a]
-            self.S_tdm[p, q, 1] = O_tdmy[i, a]
-            self.S_tdm[p, q, 2] = O_tdmz[i, a]
-            # Calculate energy for p and q
-            # DE = Delta(mo_ene) + Delta(h1e)
-            # --> does not work
-            # TODO: check energy of Slater determinant
-            # ha = np.einsum('j,jj', mo_coeff[:, a], h1e)
-            # hi = np.einsum('j,jj', mo_coeff[:, i], h1e)
-            # DE[p,q] = (mo_ene[a] - mo_ene[i]) + (ha - hi)
-            dm = np.einsum('pi,ij,qj->pq', mo_coeff, np.diag(self.det[q]), mo_coeff.conj())
-            E_tmp = scf.hf.energy_elec(self.mf, dm=dm)[0]
-            self.DE[p, q] = self.Ene[p] - E_tmp
+
+            # check if single excitation
+            if (len(np.where(tmp_vec == -1)[0])==1) and (len(np.where(tmp_vec == 1)[0])==1):
+
+              # Store indices of MOs
+              i = np.asarray(np.where(tmp_vec == -1)).flatten()[0]
+              a = np.asarray(np.where(tmp_vec == 1)).flatten()[0]
+
+              # Store tdm for p-->q transition
+              self.S_tdm[p, q, 0] = O_tdmx[i, a]
+              self.S_tdm[p, q, 1] = O_tdmy[i, a]
+              self.S_tdm[p, q, 2] = O_tdmz[i, a]
+
+              # Calculate excitation energy p-->q
+              # DE = Delta(mo_ene) + Delta(h1e)
+              # --> does not work
+              # TODO: check energy of Slater determinant
+              # ha = np.einsum('j,jj', mo_coeff[:, a], h1e)
+              # hi = np.einsum('j,jj', mo_coeff[:, i], h1e)
+              # DE[p,q] = (mo_ene[a] - mo_ene[i]) + (ha - hi)
+              dm = np.einsum('pi,ij,qj->pq', mo_coeff, np.diag(self.det[q]), mo_coeff.conj())
+              E_tmp = scf.hf.energy_elec(self.mf, dm=dm)[0]
+              self.DE[p, q] = -self.Ene[p] + E_tmp
+
+            # if not single excitation -> tdm = 0  
+            else:
+              
+              self.S_tdm[p, q, 0] = 0
+              self.S_tdm[p, q, 1] = 0
+              self.S_tdm[p, q, 2] = 0
+
+              dm = np.einsum('pi,ij,qj->pq', mo_coeff, np.diag(self.det[q]), mo_coeff.conj())
+              E_tmp = scf.hf.energy_elec(self.mf, dm=dm)[0]
+              self.DE[p, q] = - self.Ene[p] + E_tmp
+
           elif p == q:
             # electric dipole moment of a Slater state as diagonal element of S_tdm
             self.S_tdm[p, q, 0] = self.nucl_dip[0] - np.einsum('jj,j', O_tdmx, self.det[p])
@@ -126,6 +154,10 @@ class Slater:
             self.S_tdm[p, q, 2] = self.nucl_dip[2] - np.einsum('jj,j', O_tdmz, self.det[p])
             # diagonal element of DE are 0
             self.DE[p, q] = 0.0
+
+      # sort Slater Sates by energy
+
+
 
       # Test dipole moment
       # note: in order to get the total dipole moment, use: (nucl_dip-el_dip) (*2.541746 in Debye)
@@ -159,32 +191,40 @@ if __name__ == '__main__':
     mf = scf.RHF(mol)
     mf.kernel()
 
+    print()
+    print("############# START ################")
+    print()
+
     S_State = Slater(mol,mf)
     S_State.build()
     det = S_State.det
     Ene = S_State.Ene
     DE = S_State.DE
     S_tdm = S_State.S_tdm
-    Orb_ex_ind = np.asarray(S_State.Orb_ex_ind)
+    #Orb_ex_ind = np.asarray(S_State.Orb_ex_ind)
 
-    print('Transition dipole moments in z')
-    print(S_tdm[:,:,2])
+    print('Transition dipole moment in z for the first transition')
+    print(S_tdm[0,1,2])
+    print(S_tdm[1,0,2])
     print()
 
-    print('Dipole moment of the Slater states')
-    print(np.diag(S_tdm[:,:,2]))
+    print('Dipole moment of the two first Slater states')
+    print(np.diag(S_tdm[0:2,0:2,2]))
     print()
 
-    print('Energies of the Slater states')
-    print(Ene)
+    print('Energies of the two first Slater states')
+    print(Ene[:2])
     print()
 
-    print('Orbital excitation')
-    print(Orb_ex_ind)
+    print('Orbital excitation of the two first Slater States')
+    print(Orb_ex_ind[:2])
     print()
 
-    print(" Info for 0 -> 1 transition")
+    print(" Info for transition between the two first Slater states")
     print(det[0],'->',det[1])
     print('DE= ',DE[0,1])
-    print('TDM= ',S_tdm[0,1])
+    print('TDM(x,y,z)= ',S_tdm[0,1])
+    print()
 
+    print("############# END ################")
+    print()
